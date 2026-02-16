@@ -4,13 +4,21 @@ Pure GML implementation of MessagePack encoding/decoding for GameMaker Studio 2.
 
 ## Quick Start
 
+**Important**: After encoding, the buffer is seeked to position 0 (to allow reading from the start), so `buffer_tell()` will return 0. Use `buffer_get_size(buffer)` to get the actual encoded data length.
+
 ```gml
 // Encode data to MessagePack
 var data = { name: "Player", health: 100, position: { x: 100, y: 200 } };
 var buffer = msgpack_encode(data);
 
-// Send over network
-network_send_raw(socket, buffer, buffer_tell(buffer));
+// Check for encoding errors
+if (is_struct(buffer) && variable_struct_exists(buffer, "__msgpack_error")) {
+    show_debug_message("Encode error: " + buffer.error);
+    return;
+}
+
+// Send over network - use buffer_get_size, not buffer_tell (buffer is seeked to 0 after encoding)
+network_send_raw(socket, buffer, buffer_get_size(buffer));
 buffer_delete(buffer);
 
 // Decode received data
@@ -91,6 +99,10 @@ function save_player_data() {
     };
     
     var buff = msgpack_encode(player);
+    if (is_struct(buff) && variable_struct_exists(buff, "__msgpack_error")) {
+        show_debug_message("Encode error: " + buff.error);
+        return;
+    }
     buffer_save(buff, "player.dat");
     buffer_delete(buff);
 }
@@ -105,7 +117,7 @@ function send_player_position() {
     };
     
     var buff = msgpack_encode(msg);
-    network_send_raw(socket, buff, buffer_tell(buff));
+    network_send_raw(socket, buff, buffer_get_size(buff));
     buffer_delete(buff);
 }
 ```
@@ -154,7 +166,7 @@ var shared_buffer = buffer_create(1024, buffer_fixed, 1);
 function send_message(msg) {
     buffer_seek(shared_buffer, buffer_seek_start, 0);
     msgpack_encode(msg, shared_buffer);
-    network_send_raw(socket, shared_buffer, buffer_tell(shared_buffer));
+    network_send_raw(socket, shared_buffer, buffer_get_size(shared_buffer));
 }
 
 // Send multiple messages

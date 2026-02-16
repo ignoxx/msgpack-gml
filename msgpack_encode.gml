@@ -14,6 +14,7 @@ function msgpack_encode(_value, _buffer = -1) {
 /// @description Internal encoder class for MessagePack
 function __msgpack_encoder() constructor {
     scratch = buffer_create(8, buffer_fixed, 1);
+    buffer = -1;
     
     /// @function encode(value, [buffer])
     /// @description Encodes a value to MessagePack format
@@ -36,7 +37,9 @@ function __msgpack_encoder() constructor {
             return _result;
         }
         
+        var _len = buffer_tell(buffer);
         buffer_seek(buffer, buffer_seek_start, 0);
+        
         return buffer;
     };
     
